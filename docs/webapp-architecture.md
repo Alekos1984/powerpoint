@@ -150,13 +150,45 @@ type ImageStylePreset = {
 
 A small, extensible catalog, each entry defining prompt qualifiers (medium, line/ink treatment, color palette, tone, panel-style cues) layered on top of the author's raw prompt from the brief. Examples to seed the catalog once confirmed: *"BD franco-belge, style Largo Winch"*, *"Manga couleur façon Solo Leveling, sans éléments fantastiques"*. Stored as data (`assets/image-styles/*.json`), not hardcoded logic, so adding a style is a config change.
 
-## 8. Pending inputs (blocking full validation of this plan)
+## 8. Received inputs — confirmed against the plan
 
-Not yet received in this conversation — needed to validate layout presets, the image-style catalog, and the logo extraction task:
+Two references have been reviewed: an example MD brief (16-slide ACCEPTENS deck, Spanish, narrative/scientific tone) and an example PPTX intro slide. Both confirm the plan in §5–7 rather than change it.
 
-- The example Markdown brief.
-- A few example decks showing the desired layouts (full-bleed image + readable overlay text, partial-image layouts, etc.).
-- The intro slide image containing the logos to extract into `app/assets/logos/`.
+### 8.1 MD brief schema — matches §5/§6 directly
+
+The real brief already follows the exact `Slide.spokenText` / `Slide.onScreenText` / `Slide.image` split the data model assumes:
+
+```
+# Slide N — <title>
+## Texto en pantalla        -> onScreenText (title/body)
+## Texto oral                -> spokenText
+## Visual impactante          -> image.placeholderPrompt + layout hint
+   **Format A — image plein écran.**       -> layout "full-bleed-image-text-overlay"
+   **Format B — image 50 %, à {gauche|droite}.** -> layout "image-half-{left|right}"
+```
+
+Two things `parse-brief` (§6, step 0) needs to extract beyond individual slides, confirmed by this brief:
+
+- A **deck-level preamble** before slide 1 (language, tone, target duration, the A/B format rule itself) — goes on `Project`, not on a slide.
+- A **trailing section** after the last slide (per-slide timing table, "Principes visuels" — alternate A/B, no long paragraphs, which slides are "pivot" slides needing a stronger visual). This isn't a slide either; it's authoring guidance that should flow into the LLM prompt for `restructure-text` and into `finalPrompt` generation (§7), not get discarded.
+
+No schema change needed — `parse-brief`'s job is confirmed to be: split on `# Slide N`, map the three subsections, detect Format A/B from the "Visual impactante" text, and keep the preamble/trailing sections as deck-level metadata.
+
+### 8.2 Intro slide — reverse-engineered as the first concrete layout preset
+
+Logos extracted into `app/assets/logos/` (6 files + README with sources): AP-HP, Hôpital Saint-Antoine AP-HP, iCRIN Lab, Clariane, NeuroStim, Cline. (The Europe flag-map graphic on the same slide was *not* extracted — it's one-off slide content, not a reusable logo.)
+
+The slide itself (12,192,000 × 6,858,000 EMU, 16:9) reverse-engineers cleanly into a layout preset, `title-wave-split`:
+
+| Element | Position (% of canvas) | Notes |
+|---|---|---|
+| Wave/blob background shape | left ~0–54% width, full height | Solid fill `#006BB6`, soft drop shadow, curved right edge (custom bezier geometry) — this *is* the "looks hand-designed" texture, not a plain rectangle |
+| Title ("ACCEPTENS") | left column, ~5% x / ~21% y | 54pt bold, white, subtle drop shadow, condensed sans (Avenir Next LT Pro Light) |
+| Subtitle + tagline | left column, ~6% x / ~35% y | 28pt regular + 14pt italic line below, same white/shadow treatment |
+| Hero image | right ~47–100% width, ~9–79% height | Full-bleed within its half, no crop framing needed |
+| Sponsor/logo row | bottom strip, ~83–97% y | 6 logos, bottom-aligned, roughly evenly spaced, each behind a soft drop shadow so they read as "placed objects" rather than a flat footer |
+
+This becomes the first entry in `assets/layout-presets/` (a title-slide variant of the "image-half" family from §6), reusable independently of this specific deck's content. It also validates the shadow/overlay visual language (soft drop shadows on both text and images) worth carrying into the other layout presets, not just this one.
 
 ## 9. Suggested milestones
 
