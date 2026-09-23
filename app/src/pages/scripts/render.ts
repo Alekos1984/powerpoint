@@ -1,4 +1,5 @@
 import type { Project, ReviewStatus, Slide } from "../../lib/types.js";
+import { autosizeTextarea } from "./autosize.js";
 import { buildSlideCard } from "./slide-card.js";
 
 const params = new URLSearchParams(window.location.search);
@@ -80,7 +81,10 @@ function renderReviewRail() {
   rejectBtn.textContent = "✗ Demander des modifications";
   rejectBtn.addEventListener("click", () => {
     feedbackPanel.hidden = !feedbackPanel.hidden;
-    if (!feedbackPanel.hidden) feedbackInput.focus();
+    if (!feedbackPanel.hidden) {
+      feedbackInput.focus();
+      feedbackInput.dispatchEvent(new Event("input")); // recompute height now that it's visible (was 0 while hidden)
+    }
   });
 
   actions.append(approveBtn, rejectBtn);
@@ -94,6 +98,7 @@ function renderReviewRail() {
   feedbackInput.className = "feedback-input";
   feedbackInput.placeholder = "Explique ce qui ne va pas (texte, disposition…) — un LLM s'en servira pour retravailler la slide.";
   feedbackInput.value = slide.feedback ?? "";
+  autosizeTextarea(feedbackInput);
 
   const saveFeedbackBtn = document.createElement("button");
   saveFeedbackBtn.className = "btn btn-save-feedback";

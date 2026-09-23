@@ -1,5 +1,6 @@
 import { buildFinalPrompt, IMAGE_STYLES } from "../../lib/image-styles.js";
 import type { Project, Slide } from "../../lib/types.js";
+import { autosizeTextarea } from "./autosize.js";
 import { buildSlideCard } from "./slide-card.js";
 
 const params = new URLSearchParams(window.location.search);
@@ -20,6 +21,8 @@ const progressEl = document.querySelector<HTMLSpanElement>("#generation-progress
 let project: Project;
 let currentIndex = 0;
 let pollHandle: number | undefined;
+/** Client-side only — "a request for this slide is in flight", so the UI reacts the instant a button is clicked instead of waiting for the next poll tick. */
+const generatingOrders = new Set<number>();
 
 async function persist() {
   await fetch(`/api/project-state?id=${project.id}`, {
@@ -58,17 +61,44 @@ function renderSlide() {
 }
 
 async function triggerGeneration(order?: number, force = false) {
+  const targets = order ? [order] : generatableSlides().map((s) => s.order);
+  for (const o of targets) generatingOrders.add(o);
+  renderRail();
+  renderNav();
+  updateProgressLabel();
+
   const qs = new URLSearchParams({ id: project.id });
   if (order) qs.set("slide", String(order));
   if (force) qs.set("force", "1");
-  await fetch(`/.netlify/functions/generate-images-background?${qs}`, { method: "POST" });
-  renderRail();
+
+  try {
+    const res = await fetch(`/.netlify/functions/generate-images-background?${qs}`, { method: "POST" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  } catch (err) {
+    // The request to even *start* the background function failed — don't leave the UI stuck on "en cours".
+    for (const o of targets) generatingOrders.delete(o);
+    renderRail();
+    renderNav();
+    updateProgressLabel();
+    alert(`Impossible de lancer la génération : ${(err as Error).message}`);
+    return;
+  }
+
   startPolling();
 }
 
 function renderGenerationStatus(slide: Slide) {
   const wrap = document.createElement("div");
   wrap.className = "generation-status";
+
+  if (generatingOrders.has(slide.order)) {
+    const pending = document.createElement("span");
+    pending.className = "status-badge status-generating";
+    pending.textContent = "⏳ Génération en cours…";
+    wrap.appendChild(pending);
+    railEl.appendChild(wrap);
+    return;
+  }
 
   if (slide.image?.generatedAssetId) {
     const ok = document.createElement("span");
@@ -145,10 +175,12 @@ function renderRail() {
   promptInput.className = "feedback-input prompt-input";
   promptInput.value = currentPromptFor(slide);
   railEl.appendChild(promptInput);
+  autosizeTextarea(promptInput);
 
   styleSelect.addEventListener("change", () => {
     // The style pick drives the prompt — regenerate it, discarding a manual edit.
     promptInput.value = buildFinalPrompt(slide.image!.placeholderPrompt, styleSelect.value);
+    promptInput.dispatchEvent(new Event("input"));
   });
 
   const resetBtn = document.createElement("button");
@@ -156,6 +188,7 @@ function renderRail() {
   resetBtn.textContent = "Revenir au prompt brut du brief";
   resetBtn.addEventListener("click", () => {
     promptInput.value = slide.image!.placeholderPrompt;
+    promptInput.dispatchEvent(new Event("input"));
   });
   railEl.appendChild(resetBtn);
 
@@ -176,6 +209,7 @@ function renderRail() {
 
 function dotStatus(slide: Slide): string {
   if (!slide.image) return "no-image";
+  if (generatingOrders.has(slide.order)) return "status-generating";
   if (slide.image.generatedAssetId) return "status-approved";
   if (slide.image.generationError) return "status-needs_changes";
   return "status-pending";
@@ -183,6 +217,7 @@ function dotStatus(slide: Slide): string {
 
 function dotTitle(slide: Slide): string {
   if (!slide.image) return `Slide ${slide.order} — sans image`;
+  if (generatingOrders.has(slide.order)) return `Slide ${slide.order} — génération en cours`;
   if (slide.image.generatedAssetId) return `Slide ${slide.order} — image générée`;
   if (slide.image.generationError) return `Slide ${slide.order} — échec de génération`;
   return `Slide ${slide.order} — prompt prêt`;
@@ -236,13 +271,18 @@ function isFullyGenerated(): boolean {
 function updateProgressLabel() {
   const targets = generatableSlides();
   const done = targets.filter((s) => s.image!.generatedAssetId || s.image!.generationError).length;
-  progressEl.textContent = targets.length ? `${done}/${targets.length} images traitées` : "";
+  const inProgressNote = generatingOrders.size ? ` (${generatingOrders.size} en cours…)` : "";
+  progressEl.textContent = targets.length ? `${done}/${targets.length} images traitées${inProgressNote}` : "";
+  generateAllBtn.disabled = generatingOrders.size > 0;
 }
 
 async function refreshProject() {
   const res = await fetch(`/api/project-state?id=${project.id}`);
   if (!res.ok) return;
   ({ project } = (await res.json()) as { project: Project });
+  for (const slide of project.slides) {
+    if (slide.image?.generatedAssetId || slide.image?.generationError) generatingOrders.delete(slide.order);
+  }
   renderSlide();
   renderRail();
   renderNav();

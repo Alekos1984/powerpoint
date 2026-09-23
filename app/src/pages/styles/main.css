@@ -357,6 +357,22 @@ a.btn {
   color: var(--amber);
 }
 
+.status-generating {
+  background: #e6f0fa;
+  color: var(--accent);
+  animation: pulse-generating 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-generating {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
 .review-actions {
   display: flex;
   gap: 0.5rem;
@@ -370,6 +386,11 @@ a.btn {
   background: #fff;
   color: var(--text);
   font-size: 0.85rem;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .btn-approve {
@@ -414,7 +435,8 @@ a.btn {
   border-radius: 0.4rem;
   border: 1px solid var(--border);
   font: inherit;
-  resize: vertical;
+  resize: none;
+  overflow-y: hidden;
   color: var(--text);
   background: #fff;
 }
@@ -472,6 +494,12 @@ a.btn {
   color: var(--muted);
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+.nav-dot.status-generating {
+  border-color: var(--accent);
+  color: var(--accent);
+  animation: pulse-generating 1.4s ease-in-out infinite;
 }
 
 .nav-dot.status-approved {
