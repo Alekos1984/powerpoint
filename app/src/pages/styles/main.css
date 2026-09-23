@@ -369,6 +369,11 @@ button {
   border-color: var(--text);
 }
 
+.nav-approve-all {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 @media (max-width: 48rem) {
   .slide-card {
     grid-template-columns: 1fr;

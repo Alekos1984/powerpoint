@@ -179,7 +179,24 @@ function renderNav() {
   nextBtn.disabled = currentIndex === project.slides.length - 1;
   nextBtn.addEventListener("click", () => goTo(currentIndex + 1));
 
-  navEl.append(prevBtn, strip, nextBtn);
+  const approveAllBtn = document.createElement("button");
+  approveAllBtn.className = "btn btn-approve nav-approve-all";
+  approveAllBtn.textContent = "✓ Approuver tout";
+  approveAllBtn.addEventListener("click", async () => {
+    const hasFeedback = project.slides.some((s) => s.reviewStatus === "needs_changes" && s.feedback);
+    if (hasFeedback && !confirm("Des slides ont des remarques en attente. Les approuver toutes effacera ces remarques. Continuer ?")) {
+      return;
+    }
+    for (const s of project.slides) {
+      s.reviewStatus = "approved";
+      s.feedback = undefined;
+    }
+    await persist();
+    renderSlide();
+    renderNav();
+  });
+
+  navEl.append(prevBtn, strip, nextBtn, approveAllBtn);
 
   const activeDot = strip.querySelector(".active");
   activeDot?.scrollIntoView({ block: "nearest", inline: "center" });
