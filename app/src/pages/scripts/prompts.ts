@@ -48,7 +48,12 @@ function currentPromptFor(slide: Slide): string {
 }
 
 function assetUrl(slide: Slide): string | undefined {
-  return slide.image?.generatedAssetId ? `/api/asset?key=${encodeURIComponent(slide.image.generatedAssetId)}` : undefined;
+  if (!slide.image?.generatedAssetId) return undefined;
+  // The blob key is stable across a regeneration (same slide, same key) — without a
+  // cache-busting param the browser's "immutable" cached copy of the *old* image wins
+  // and a regenerated image silently never shows up.
+  const version = slide.image.generatedAt ? `&v=${encodeURIComponent(slide.image.generatedAt)}` : "";
+  return `/api/asset?key=${encodeURIComponent(slide.image.generatedAssetId)}${version}`;
 }
 
 function renderSlide() {
@@ -87,7 +92,23 @@ async function triggerGeneration(order?: number, force = false) {
   startPolling();
 }
 
+/**
+ * Updates only the generation status/actions block for the current slide — never
+ * touches the style select or prompt textarea. This is what the poll loop calls, so an
+ * in-progress edit (or scroll position) in those fields survives a background generation
+ * run instead of being wiped out every 3 seconds by a full rail rebuild.
+ */
 function renderGenerationStatus(slide: Slide) {
+  if (!slide.image) return;
+
+  let container = railEl.querySelector<HTMLDivElement>("#generation-status-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "generation-status-container";
+    railEl.appendChild(container);
+  }
+  container.innerHTML = "";
+
   const wrap = document.createElement("div");
   wrap.className = "generation-status";
 
@@ -96,7 +117,7 @@ function renderGenerationStatus(slide: Slide) {
     pending.className = "status-badge status-generating";
     pending.textContent = "⏳ Génération en cours…";
     wrap.appendChild(pending);
-    railEl.appendChild(wrap);
+    container.appendChild(wrap);
     return;
   }
 
@@ -130,7 +151,7 @@ function renderGenerationStatus(slide: Slide) {
     wrap.appendChild(genBtn);
   }
 
-  railEl.appendChild(wrap);
+  container.appendChild(wrap);
 }
 
 function renderRail() {
@@ -283,8 +304,12 @@ async function refreshProject() {
   for (const slide of project.slides) {
     if (slide.image?.generatedAssetId || slide.image?.generationError) generatingOrders.delete(slide.order);
   }
+  // Deliberately not renderRail(): that fully rebuilds the style/prompt fields, which would
+  // wipe an edit the user is mid-typing (and reset their scroll position) every 3 seconds
+  // while a batch generation runs. Only the slide preview, this one status block, the nav
+  // dots and the progress label need to reflect newly-arrived results.
   renderSlide();
-  renderRail();
+  renderGenerationStatus(project.slides[currentIndex]);
   renderNav();
   updateProgressLabel();
 }

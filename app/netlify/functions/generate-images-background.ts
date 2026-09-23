@@ -70,29 +70,43 @@ export default async (req: Request): Promise<void> => {
   const assetStore = getStore("generated-images");
 
   for (const order of targetOrders) {
-    // Re-read the project fresh for every slide rather than reusing one held-open copy,
-    // so a concurrent edit from the browser (a different slide's prompt, say) during this
-    // run isn't clobbered by writing back a stale in-memory snapshot at the end.
-    const project = await loadProject(projectId);
-    if (!project) return;
-    const slide = project.slides.find((s) => s.order === order);
-    if (!slide?.image) continue;
+    // Read once to get this slide's own prompt/style — that part is safe to read early.
+    const projectBeforeCall = await loadProject(projectId);
+    if (!projectBeforeCall) return;
+    const slideBeforeCall = projectBeforeCall.slides.find((s) => s.order === order);
+    if (!slideBeforeCall?.image) continue;
 
-    const prompt = slide.image.finalPrompt ?? buildFinalPrompt(slide.image.placeholderPrompt, slide.image.styleId);
-    const size = getStyleById(slide.image.styleId)?.size ?? "1536x1024";
+    const prompt = slideBeforeCall.image.finalPrompt ?? buildFinalPrompt(slideBeforeCall.image.placeholderPrompt, slideBeforeCall.image.styleId);
+    const size = getStyleById(slideBeforeCall.image.styleId)?.size ?? "1536x1024";
+    const slideId = slideBeforeCall.id;
 
+    let result: { assetKey: string; bytes: Buffer } | undefined;
+    let error: string | undefined;
     try {
-      const base64 = await callOpenAiImage(prompt, size);
-      const assetKey = `${project.id}/${slide.id}.png`;
-      const bytes = Buffer.from(base64, "base64");
-      await assetStore.set(assetKey, bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer);
-      slide.image.generatedAssetId = assetKey;
-      slide.image.generationError = undefined;
+      const base64 = await callOpenAiImage(prompt, size); // slow (real API call) — nothing is written yet
+      result = { assetKey: `${projectId}/${slideId}.png`, bytes: Buffer.from(base64, "base64") };
     } catch (err) {
-      slide.image.generationError = (err as Error).message;
+      error = (err as Error).message;
     }
 
-    await saveProject(project);
+    // Re-read right before writing (not the copy from before the slow API call), so a
+    // concurrent edit made *during* that call — e.g. the user tweaking this same slide's
+    // prompt while it was generating — isn't clobbered by writing back a stale snapshot.
+    const projectAfterCall = await loadProject(projectId);
+    if (!projectAfterCall) return;
+    const slideAfterCall = projectAfterCall.slides.find((s) => s.order === order);
+    if (!slideAfterCall?.image) continue;
+
+    if (result) {
+      await assetStore.set(result.assetKey, result.bytes.buffer.slice(result.bytes.byteOffset, result.bytes.byteOffset + result.bytes.byteLength) as ArrayBuffer);
+      slideAfterCall.image.generatedAssetId = result.assetKey;
+      slideAfterCall.image.generatedAt = new Date().toISOString();
+      slideAfterCall.image.generationError = undefined;
+    } else {
+      slideAfterCall.image.generationError = error;
+    }
+
+    await saveProject(projectAfterCall);
   }
 
   const finalProject = await loadProject(projectId);

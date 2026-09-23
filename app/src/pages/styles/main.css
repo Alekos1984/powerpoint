@@ -212,6 +212,13 @@ a.btn {
   gap: 0.75rem;
 }
 
+/* Without this, flexbox can shrink a tall child (the autosized prompt textarea,
+   in particular) below its real content height instead of letting the rail
+   itself scroll — the excess becomes invisible with no way to reach it. */
+.review-rail > * {
+  flex-shrink: 0;
+}
+
 .review-rail-heading {
   margin: 0;
   font-weight: 600;

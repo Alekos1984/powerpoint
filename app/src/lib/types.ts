@@ -12,6 +12,8 @@ export interface SlideImage {
   styleId?: string;
   /** Netlify Blobs key of the generated asset, once step 4 has run. */
   generatedAssetId?: string;
+  /** ISO timestamp of the last successful generation — used to cache-bust the asset URL on regeneration, since the blob key itself is stable. */
+  generatedAt?: string;
   /** Set when the step-4 generation call failed for this slide; cleared on a successful (re)generation. */
   generationError?: string;
 }
