@@ -3,6 +3,8 @@ import { buildFinalPrompt, getStyleById } from "../../src/lib/image-styles.js";
 import { loadProject, saveProject } from "../../src/lib/project-store.js";
 import type { Slide } from "../../src/lib/types.js";
 
+const MAX_HISTORY_PER_SLIDE = 12;
+
 /**
  * Netlify Background Function (note the -background filename): a single
  * gpt-image-1 call can take well past the ~10-26s synchronous function
@@ -84,7 +86,9 @@ export default async (req: Request): Promise<void> => {
     let error: string | undefined;
     try {
       const base64 = await callOpenAiImage(prompt, size); // slow (real API call) — nothing is written yet
-      result = { assetKey: `${projectId}/${slideId}.png`, bytes: Buffer.from(base64, "base64") };
+      // Unique key per generation (not one stable key per slide) so a regeneration
+      // lands as a new history entry instead of silently overwriting the previous one.
+      result = { assetKey: `${projectId}/${slideId}-${Date.now()}.png`, bytes: Buffer.from(base64, "base64") };
     } catch (err) {
       error = (err as Error).message;
     }
@@ -99,8 +103,11 @@ export default async (req: Request): Promise<void> => {
 
     if (result) {
       await assetStore.set(result.assetKey, result.bytes.buffer.slice(result.bytes.byteOffset, result.bytes.byteOffset + result.bytes.byteLength) as ArrayBuffer);
+      const generatedAt = new Date().toISOString();
+      const history = [...(slideAfterCall.image.history ?? []), { assetId: result.assetKey, generatedAt }];
+      slideAfterCall.image.history = history.slice(-MAX_HISTORY_PER_SLIDE);
       slideAfterCall.image.generatedAssetId = result.assetKey;
-      slideAfterCall.image.generatedAt = new Date().toISOString();
+      slideAfterCall.image.generatedAt = generatedAt;
       slideAfterCall.image.generationError = undefined;
     } else {
       slideAfterCall.image.generationError = error;

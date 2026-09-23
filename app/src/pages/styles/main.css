@@ -198,7 +198,39 @@ a.btn {
   min-width: 0;
   overflow: auto;
   display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   padding: 1.5rem;
+}
+
+.history-strip {
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.2rem;
+}
+
+.history-thumb {
+  flex-shrink: 0;
+  width: 4.5rem;
+  height: 3rem;
+  padding: 0;
+  border: 2px solid var(--border);
+  border-radius: 0.35rem;
+  overflow: hidden;
+  background: none;
+}
+
+.history-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.history-thumb.active {
+  border-color: var(--accent);
 }
 
 .review-rail {

@@ -25,10 +25,13 @@ function formatSizeNote(size: string): string {
  * visual attributes is not more precise, it's noise that crowds out the
  * actual slide content in the prompt.
  */
+const NO_TEXT_INSTRUCTION = "Ne pas inclure de texte dans l'image.";
+
 export function buildFinalPrompt(placeholderPrompt: string, styleId?: string): string {
   const style = getStyleById(styleId);
   const size = style?.size ?? "1536x1024";
   const parts = [placeholderPrompt.trim(), formatSizeNote(size)];
   if (style?.promptSuffix) parts.push(style.promptSuffix);
+  parts.push(NO_TEXT_INSTRUCTION);
   return parts.filter(Boolean).join(" ");
 }

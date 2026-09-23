@@ -56,12 +56,44 @@ function assetUrl(slide: Slide): string | undefined {
   return `/api/asset?key=${encodeURIComponent(slide.image.generatedAssetId)}${version}`;
 }
 
+function historyThumbUrl(entry: { assetId: string; generatedAt: string }): string {
+  return `/api/asset?key=${encodeURIComponent(entry.assetId)}&v=${encodeURIComponent(entry.generatedAt)}`;
+}
+
+function buildHistoryStrip(slide: Slide): HTMLElement | null {
+  const history = slide.image?.history;
+  if (!history || history.length < 2) return null; // nothing to pick between with 0-1 attempts
+
+  const strip = document.createElement("div");
+  strip.className = "history-strip";
+  for (const entry of [...history].reverse()) {
+    // newest first
+    const thumb = document.createElement("button");
+    thumb.className = `history-thumb ${entry.assetId === slide.image!.generatedAssetId ? "active" : ""}`;
+    thumb.title = new Date(entry.generatedAt).toLocaleString();
+    const img = document.createElement("img");
+    img.src = historyThumbUrl(entry);
+    img.alt = "";
+    thumb.appendChild(img);
+    thumb.addEventListener("click", async () => {
+      slide.image!.generatedAssetId = entry.assetId;
+      slide.image!.generatedAt = entry.generatedAt;
+      await persist();
+      renderSlide();
+    });
+    strip.appendChild(thumb);
+  }
+  return strip;
+}
+
 function renderSlide() {
   const slide = project.slides[currentIndex];
   viewportEl.innerHTML = "";
   viewportEl.appendChild(
     buildSlideCard(slide, { promptOverride: currentPromptFor(slide), promptTag: "Prompt final", generatedImageUrl: assetUrl(slide) }),
   );
+  const historyStrip = buildHistoryStrip(slide);
+  if (historyStrip) viewportEl.appendChild(historyStrip);
   positionEl.textContent = `Slide ${currentIndex + 1} / ${project.slides.length}`;
 }
 
@@ -300,7 +332,25 @@ function updateProgressLabel() {
 async function refreshProject() {
   const res = await fetch(`/api/project-state?id=${project.id}`);
   if (!res.ok) return;
-  ({ project } = (await res.json()) as { project: Project });
+  const { project: fresh } = (await res.json()) as { project: Project };
+
+  // Merge in place — never reassign `project` or replace a slide object. The save
+  // button, style select and prompt textarea for the currently-rendered slide hold
+  // direct references to these objects; replacing them would silently detach those
+  // controls from what actually gets persisted, so "Enregistrer" would serialize the
+  // freshly-*re-fetched* (unedited) state instead of the user's change.
+  project.status = fresh.status;
+  for (const freshSlide of fresh.slides) {
+    const liveSlide = project.slides.find((s) => s.id === freshSlide.id);
+    if (!liveSlide?.image || !freshSlide.image) continue;
+    // Only sync the fields the background function can change — never finalPrompt/
+    // styleId, which are the user's to edit and must survive untouched here.
+    liveSlide.image.generatedAssetId = freshSlide.image.generatedAssetId;
+    liveSlide.image.generatedAt = freshSlide.image.generatedAt;
+    liveSlide.image.history = freshSlide.image.history;
+    liveSlide.image.generationError = freshSlide.image.generationError;
+  }
+
   for (const slide of project.slides) {
     if (slide.image?.generatedAssetId || slide.image?.generationError) generatingOrders.delete(slide.order);
   }
