@@ -19,17 +19,28 @@ function renderOnScreenLine(line: string): string {
 }
 
 /** Shared slide preview used by both the text/layout review (wizard) and the prompt/style review steps. */
-export function buildSlideCard(slide: Slide, opts?: { promptOverride?: string; promptTag?: string }): HTMLElement {
+export function buildSlideCard(
+  slide: Slide,
+  opts?: { promptOverride?: string; promptTag?: string; generatedImageUrl?: string },
+): HTMLElement {
   const preset = LAYOUT_PRESETS[slide.layout];
   const article = document.createElement("article");
   article.className = `slide-card ${preset.cssClass}`;
 
   const placeholder = document.createElement("div");
-  placeholder.className = "image-placeholder";
-  const promptText = opts?.promptOverride ?? slide.image?.placeholderPrompt;
-  placeholder.innerHTML = slide.image
-    ? `<span class="placeholder-tag">${escapeHtml(opts?.promptTag ?? "image à générer (étape 3)")}</span><p class="placeholder-prompt">${escapeHtml(promptText ?? "")}</p>`
-    : `<span class="placeholder-tag">texte seul</span>`;
+  if (opts?.generatedImageUrl) {
+    placeholder.className = "image-generated";
+    const img = document.createElement("img");
+    img.src = opts.generatedImageUrl;
+    img.alt = slide.image?.placeholderPrompt ?? "";
+    placeholder.appendChild(img);
+  } else {
+    placeholder.className = "image-placeholder";
+    const promptText = opts?.promptOverride ?? slide.image?.placeholderPrompt;
+    placeholder.innerHTML = slide.image
+      ? `<span class="placeholder-tag">${escapeHtml(opts?.promptTag ?? "image à générer (étape 3)")}</span><p class="placeholder-prompt">${escapeHtml(promptText ?? "")}</p>`
+      : `<span class="placeholder-tag">texte seul</span>`;
+  }
 
   const text = document.createElement("div");
   text.className = "slide-text";

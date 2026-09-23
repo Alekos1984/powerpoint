@@ -12,6 +12,8 @@ export interface SlideImage {
   styleId?: string;
   /** Netlify Blobs key of the generated asset, once step 4 has run. */
   generatedAssetId?: string;
+  /** Set when the step-4 generation call failed for this slide; cleared on a successful (re)generation. */
+  generationError?: string;
 }
 
 export type ReviewStatus = "pending" | "approved" | "needs_changes";

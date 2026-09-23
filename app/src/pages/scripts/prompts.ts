@@ -14,9 +14,12 @@ const navEl = document.querySelector<HTMLElement>("#slide-nav")!;
 const backLink = document.querySelector<HTMLAnchorElement>("#back-link")!;
 const globalStyleSelect = document.querySelector<HTMLSelectElement>("#global-style-select")!;
 const applyGlobalStyleBtn = document.querySelector<HTMLButtonElement>("#apply-global-style")!;
+const generateAllBtn = document.querySelector<HTMLButtonElement>("#generate-all")!;
+const progressEl = document.querySelector<HTMLSpanElement>("#generation-progress")!;
 
 let project: Project;
 let currentIndex = 0;
+let pollHandle: number | undefined;
 
 async function persist() {
   await fetch(`/api/project-state?id=${project.id}`, {
@@ -41,11 +44,63 @@ function currentPromptFor(slide: Slide): string {
   return slide.image.finalPrompt ?? buildFinalPrompt(slide.image.placeholderPrompt, slide.image.styleId);
 }
 
+function assetUrl(slide: Slide): string | undefined {
+  return slide.image?.generatedAssetId ? `/api/asset?key=${encodeURIComponent(slide.image.generatedAssetId)}` : undefined;
+}
+
 function renderSlide() {
   const slide = project.slides[currentIndex];
   viewportEl.innerHTML = "";
-  viewportEl.appendChild(buildSlideCard(slide, { promptOverride: currentPromptFor(slide), promptTag: "Prompt final" }));
+  viewportEl.appendChild(
+    buildSlideCard(slide, { promptOverride: currentPromptFor(slide), promptTag: "Prompt final", generatedImageUrl: assetUrl(slide) }),
+  );
   positionEl.textContent = `Slide ${currentIndex + 1} / ${project.slides.length}`;
+}
+
+async function triggerGeneration(order?: number, force = false) {
+  const qs = new URLSearchParams({ id: project.id });
+  if (order) qs.set("slide", String(order));
+  if (force) qs.set("force", "1");
+  await fetch(`/.netlify/functions/generate-images-background?${qs}`, { method: "POST" });
+  renderRail();
+  startPolling();
+}
+
+function renderGenerationStatus(slide: Slide) {
+  const wrap = document.createElement("div");
+  wrap.className = "generation-status";
+
+  if (slide.image?.generatedAssetId) {
+    const ok = document.createElement("span");
+    ok.className = "status-badge status-approved";
+    ok.textContent = "Image générée";
+    wrap.appendChild(ok);
+
+    const regenBtn = document.createElement("button");
+    regenBtn.className = "btn";
+    regenBtn.textContent = "↻ Régénérer";
+    regenBtn.addEventListener("click", () => triggerGeneration(slide.order, true));
+    wrap.appendChild(regenBtn);
+  } else if (slide.image?.generationError) {
+    const err = document.createElement("p");
+    err.className = "feedback-note";
+    err.textContent = `Échec : ${slide.image.generationError}`;
+    wrap.appendChild(err);
+
+    const retryBtn = document.createElement("button");
+    retryBtn.className = "btn btn-reject";
+    retryBtn.textContent = "Réessayer";
+    retryBtn.addEventListener("click", () => triggerGeneration(slide.order, true));
+    wrap.appendChild(retryBtn);
+  } else {
+    const genBtn = document.createElement("button");
+    genBtn.className = "btn btn-approve";
+    genBtn.textContent = "🎨 Générer cette image";
+    genBtn.addEventListener("click", () => triggerGeneration(slide.order, false));
+    wrap.appendChild(genBtn);
+  }
+
+  railEl.appendChild(wrap);
 }
 
 function renderRail() {
@@ -115,6 +170,22 @@ function renderRail() {
     renderNav();
   });
   railEl.appendChild(saveBtn);
+
+  renderGenerationStatus(slide);
+}
+
+function dotStatus(slide: Slide): string {
+  if (!slide.image) return "no-image";
+  if (slide.image.generatedAssetId) return "status-approved";
+  if (slide.image.generationError) return "status-needs_changes";
+  return "status-pending";
+}
+
+function dotTitle(slide: Slide): string {
+  if (!slide.image) return `Slide ${slide.order} — sans image`;
+  if (slide.image.generatedAssetId) return `Slide ${slide.order} — image générée`;
+  if (slide.image.generationError) return `Slide ${slide.order} — échec de génération`;
+  return `Slide ${slide.order} — prompt prêt`;
 }
 
 function renderNav() {
@@ -130,10 +201,9 @@ function renderNav() {
   strip.className = "nav-strip";
   project.slides.forEach((slide, index) => {
     const dot = document.createElement("button");
-    const dotStatus = !slide.image ? "no-image" : slide.image.finalPrompt ? "status-approved" : "status-pending";
-    dot.className = `nav-dot ${dotStatus} ${index === currentIndex ? "active" : ""}`;
+    dot.className = `nav-dot ${dotStatus(slide)} ${index === currentIndex ? "active" : ""}`;
     dot.textContent = String(slide.order);
-    dot.title = !slide.image ? `Slide ${slide.order} — sans image` : `Slide ${slide.order} — ${slide.image.finalPrompt ? "prompt prêt" : "prompt à valider"}`;
+    dot.title = dotTitle(slide);
     dot.addEventListener("click", () => goTo(index));
     strip.appendChild(dot);
   });
@@ -154,6 +224,42 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "ArrowLeft") goTo(currentIndex - 1);
   if (event.key === "ArrowRight") goTo(currentIndex + 1);
 });
+
+function generatableSlides(): Slide[] {
+  return project.slides.filter((s) => s.image && s.reviewStatus === "approved");
+}
+
+function isFullyGenerated(): boolean {
+  return generatableSlides().every((s) => s.image!.generatedAssetId || s.image!.generationError);
+}
+
+function updateProgressLabel() {
+  const targets = generatableSlides();
+  const done = targets.filter((s) => s.image!.generatedAssetId || s.image!.generationError).length;
+  progressEl.textContent = targets.length ? `${done}/${targets.length} images traitées` : "";
+}
+
+async function refreshProject() {
+  const res = await fetch(`/api/project-state?id=${project.id}`);
+  if (!res.ok) return;
+  ({ project } = (await res.json()) as { project: Project });
+  renderSlide();
+  renderRail();
+  renderNav();
+  updateProgressLabel();
+}
+
+function startPolling() {
+  updateProgressLabel();
+  if (pollHandle) return;
+  pollHandle = window.setInterval(async () => {
+    await refreshProject();
+    if (isFullyGenerated() && pollHandle) {
+      window.clearInterval(pollHandle);
+      pollHandle = undefined;
+    }
+  }, 3000);
+}
 
 applyGlobalStyleBtn.addEventListener("click", async () => {
   const styleId = globalStyleSelect.value;
@@ -179,6 +285,8 @@ applyGlobalStyleBtn.addEventListener("click", async () => {
   renderRail();
   renderNav();
 });
+
+generateAllBtn.addEventListener("click", () => triggerGeneration());
 
 async function main() {
   if (!projectId) {
@@ -222,6 +330,12 @@ async function main() {
   renderSlide();
   renderRail();
   renderNav();
+  updateProgressLabel();
+
+  if (!isFullyGenerated() && generatableSlides().some((s) => s.image!.generatedAssetId || s.image!.generationError)) {
+    // A generation run was left in progress (e.g. the page was reloaded mid-batch) — keep polling.
+    startPolling();
+  }
 }
 
 main();
