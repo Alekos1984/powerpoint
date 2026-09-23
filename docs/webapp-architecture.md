@@ -192,8 +192,8 @@ This becomes the first entry in `assets/layout-presets/` (a title-slide variant 
 
 ## 9. Suggested milestones
 
-1. Scaffold `app/` (Netlify site + Functions skeleton, `Project`/`Slide` types, Netlify Blobs wiring) — no AI calls yet, fake data.
-2. Step 0–1: MD upload → parse → text-only placeholder draft, real OpenAI text call.
+1. ✅ **Done.** Scaffold `app/` (Netlify site + Functions skeleton, `Project`/`Slide` types, Netlify Blobs wiring). Went one step further than "fake data": `parse-brief` is a real deterministic Markdown parser (no LLM) validated end-to-end against `fixtures/example-brief.md` via `netlify dev` — upload → parse → store in Blobs → render step-1 draft with placeholders → approve-toggle write-back all work. See `app/README.md`.
+2. Step 0–1 remainder: plug in the optional LLM rewrite pass (`restructure-text`, real OpenAI text call) on top of the existing deterministic parse.
 3. Step 2: slide-by-slide review UI.
 4. Step 3–4: prompt/style review + real OpenAI image generation.
 5. Step 5–6: consolidated preview + PPTX/PDF export (validate the hybrid-PPTX approach from §3 against a real example deck).

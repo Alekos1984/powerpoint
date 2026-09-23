@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PPT Generator</title>
+    <link rel="stylesheet" href="../styles/main.css" />
+  </head>
+  <body>
+    <main class="landing">
+      <h1>Générateur de présentations</h1>
+      <p>Dépose ton brief structuré (.md). Étape 1 : un brouillon texte + placeholders, sans image.</p>
+
+      <form id="upload-form">
+        <label for="file">Fichier Markdown</label>
+        <input type="file" id="file" name="file" accept=".md,text/markdown" required />
+        <button type="submit">Générer le brouillon</button>
+      </form>
+
+      <p id="status" class="status" role="status"></p>
+    </main>
+
+    <script type="module" src="../wizard/upload.ts"></script>
+  </body>
+</html>

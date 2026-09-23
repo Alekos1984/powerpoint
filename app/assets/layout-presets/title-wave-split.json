@@ -1,0 +1,39 @@
+{
+  "id": "title-wave-split",
+  "label": "Titre — vague + logos (intro slide)",
+  "sourceExample": "Exemple_page_1_ppt.pptx (ACCEPTENS)",
+  "canvas": { "widthEmu": 12192000, "heightEmu": 6858000, "aspectRatio": "16:9" },
+  "note": "Not wired into the wizard yet (milestone 1 only renders the 4 core LayoutId presets). Captured here as reference data for a future 'title slide' preset in the intro/step-3+ design pass.",
+  "elements": [
+    {
+      "role": "background-shape",
+      "description": "Wave/blob covering the left portion, curved right edge (custom bezier geometry), soft drop shadow",
+      "positionPercent": { "x": 0, "y": 0, "width": 54, "height": 100 },
+      "fill": "#006BB6"
+    },
+    {
+      "role": "title",
+      "description": "Deck/study name, bold, white, drop shadow",
+      "positionPercent": { "x": 5, "y": 21, "width": 34 },
+      "font": { "family": "Avenir Next LT Pro Light", "sizePt": 54, "weight": "bold", "color": "#FFFFFF" }
+    },
+    {
+      "role": "subtitle",
+      "description": "Question line + italic tagline below it",
+      "positionPercent": { "x": 6, "y": 35 },
+      "font": { "family": "Avenir Next LT Pro Light", "sizePt": 28, "color": "#FFFFFF" },
+      "taglineFont": { "sizePt": 14, "style": "italic", "color": "#FFFFFF" }
+    },
+    {
+      "role": "hero-image",
+      "description": "Full-bleed within the right half, no crop framing needed",
+      "positionPercent": { "x": 47, "y": 9, "width": 53, "height": 70 }
+    },
+    {
+      "role": "logo-row",
+      "description": "Bottom-aligned sponsor/partner logos, roughly evenly spaced, soft drop shadow each",
+      "positionPercent": { "x": 0, "y": 83, "width": 97, "height": 14 },
+      "logoCount": 6
+    }
+  ]
+}

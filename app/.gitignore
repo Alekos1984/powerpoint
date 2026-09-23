@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.netlify/
+.env
+.env.local
+
+# The repo-root .gitignore has a Python-venv `lib/` rule that would otherwise
+# also swallow this TS source folder.
+!src/lib/
+!src/lib/**
