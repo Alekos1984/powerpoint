@@ -109,6 +109,65 @@ button {
   margin: 0;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+a.btn {
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn.btn-disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.4;
+  pointer-events: none;
+  cursor: default;
+}
+
+/* ---- Prompts & style step ---- */
+
+.global-style-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: #fafbfc;
+  font-size: 0.85rem;
+}
+
+.global-style-bar label {
+  color: var(--muted);
+}
+
+.field-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: -0.3rem;
+}
+
+.style-select,
+.global-style-bar select {
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  color: var(--text);
+  background: #fff;
+}
+
+.prompt-input {
+  min-height: 7rem;
+}
+
+.nav-dot.no-image {
+  opacity: 0.4;
+}
+
 .project-meta,
 .slide-position {
   color: var(--muted);

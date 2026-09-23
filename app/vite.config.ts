@@ -11,6 +11,7 @@ export default defineConfig({
       input: {
         index: resolve(__dirname, "src/pages/index.html"),
         wizard: resolve(__dirname, "src/pages/wizard.html"),
+        prompts: resolve(__dirname, "src/pages/prompts.html"),
       },
     },
   },

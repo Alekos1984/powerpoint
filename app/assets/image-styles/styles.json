@@ -1,0 +1,32 @@
+[
+  {
+    "id": "bd-franco-belge",
+    "label": "BD franco-belge (style Largo Winch)",
+    "promptSuffix": "style bande dessinée franco-belge, ligne claire, encrage précis, couleurs plates saturées, ambiance réaliste et cinématique, sans exagération cartoon",
+    "size": "1536x1024"
+  },
+  {
+    "id": "manga-couleur",
+    "label": "Manga couleur (façon Solo Leveling, sans fantaisie)",
+    "promptSuffix": "manga colorisé moderne, traits fins et dynamiques, ombrage cellshading, ambiance sérieuse et réaliste, sans élément fantastique ni magie",
+    "size": "1536x1024"
+  },
+  {
+    "id": "photo-realiste",
+    "label": "Photo réaliste",
+    "promptSuffix": "photographie réaliste, éclairage naturel, haute définition, rendu photojournalistique",
+    "size": "1536x1024"
+  },
+  {
+    "id": "illustration-editoriale",
+    "label": "Illustration éditoriale sobre",
+    "promptSuffix": "illustration éditoriale sobre, aplats de couleur limités, style presse scientifique, sans texte intégré",
+    "size": "1536x1024"
+  },
+  {
+    "id": "aucun-style",
+    "label": "Aucun style (prompt brut)",
+    "promptSuffix": "",
+    "size": "1536x1024"
+  }
+]

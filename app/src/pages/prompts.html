@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PPT Generator — Brouillon</title>
+    <title>PPT Generator — Styles &amp; prompts</title>
     <link rel="stylesheet" href="./styles/main.css" />
   </head>
   <body>
@@ -13,18 +13,24 @@
         <p id="project-meta" class="project-meta"></p>
       </div>
       <div class="header-actions">
-        <a id="next-step-link" class="btn btn-approve" href="#">Étape 3 : styles &amp; images →</a>
+        <a id="back-link" class="btn" href="#">← Retour aux textes</a>
         <p id="slide-position" class="slide-position"></p>
       </div>
     </header>
 
+    <div class="global-style-bar">
+      <label for="global-style-select">Style pour toute la présentation</label>
+      <select id="global-style-select"></select>
+      <button id="apply-global-style" class="btn btn-approve">Appliquer à toutes les slides</button>
+    </div>
+
     <div class="workspace">
       <main id="slide-viewport" class="slide-viewport"></main>
-      <aside id="review-rail" class="review-rail" aria-label="Validation de la slide"></aside>
+      <aside id="review-rail" class="review-rail" aria-label="Style et prompt de l'image"></aside>
     </div>
 
     <nav id="slide-nav" class="slide-nav" aria-label="Navigation entre les slides"></nav>
 
-    <script type="module" src="./scripts/render.ts"></script>
+    <script type="module" src="./scripts/prompts.ts"></script>
   </body>
 </html>

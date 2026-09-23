@@ -1,5 +1,5 @@
-import { LAYOUT_PRESETS } from "../../lib/layout-presets.js";
 import type { Project, ReviewStatus, Slide } from "../../lib/types.js";
+import { buildSlideCard } from "./slide-card.js";
 
 const params = new URLSearchParams(window.location.search);
 const projectId = params.get("project");
@@ -10,26 +10,10 @@ const positionEl = document.querySelector<HTMLParagraphElement>("#slide-position
 const viewportEl = document.querySelector<HTMLElement>("#slide-viewport")!;
 const railEl = document.querySelector<HTMLElement>("#review-rail")!;
 const navEl = document.querySelector<HTMLElement>("#slide-nav")!;
+const nextStepLink = document.querySelector<HTMLAnchorElement>("#next-step-link")!;
 
 let project: Project;
 let currentIndex = 0;
-
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-}
-
-/** Minimal, safe subset: bold **text**, ### headings, "- " bullets. Nothing more — good enough for a step-1 draft. */
-function renderOnScreenLine(line: string): string {
-  const escaped = escapeHtml(line);
-  const headingMatch = /^(#{1,3})\s+(.*)$/.exec(escaped);
-  if (headingMatch) {
-    const level = headingMatch[1].length + 3; // -> h4/h5/h6, stays subordinate to the slide title
-    return `<h${level}>${headingMatch[2].replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")}</h${level}>`;
-  }
-  const bulletMatch = /^-\s+(.*)$/.exec(escaped);
-  const content = (bulletMatch ? bulletMatch[1] : escaped).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  return bulletMatch ? `<li>${content}</li>` : `<p>${content}</p>`;
-}
 
 async function persist() {
   await fetch(`/api/project-state?id=${project.id}`, {
@@ -57,36 +41,8 @@ const STATUS_LABEL: Record<ReviewStatus, string> = {
 
 function renderSlide() {
   const slide = project.slides[currentIndex];
-  const preset = LAYOUT_PRESETS[slide.layout];
-
   viewportEl.innerHTML = "";
-  const article = document.createElement("article");
-  article.className = `slide-card ${preset.cssClass}`;
-
-  const placeholder = document.createElement("div");
-  placeholder.className = "image-placeholder";
-  placeholder.innerHTML = slide.image
-    ? `<span class="placeholder-tag">image à générer (étape 3)</span><p class="placeholder-prompt">${escapeHtml(slide.image.placeholderPrompt)}</p>`
-    : `<span class="placeholder-tag">texte seul</span>`;
-
-  const text = document.createElement("div");
-  text.className = "slide-text";
-  text.innerHTML = `<h2>Slide ${slide.order} — ${escapeHtml(slide.title ?? "")}</h2><div class="on-screen">${slide.onScreenText.body
-    .map(renderOnScreenLine)
-    .join("")}</div>`;
-
-  const spoken = document.createElement("details");
-  spoken.className = "spoken-text";
-  spoken.innerHTML = `<summary>Texte oral</summary><p>${escapeHtml(slide.spokenText)}</p>`;
-  text.appendChild(spoken);
-
-  if (preset.id === "image-half-right") {
-    article.append(text, placeholder);
-  } else {
-    article.append(placeholder, text);
-  }
-  viewportEl.appendChild(article);
-
+  viewportEl.appendChild(buildSlideCard(slide));
   positionEl.textContent = `Slide ${currentIndex + 1} / ${project.slides.length}`;
 }
 
@@ -116,6 +72,7 @@ function renderReviewRail() {
     await persist();
     renderReviewRail();
     renderNav();
+    updateNextStepLink();
   });
 
   const rejectBtn = document.createElement("button");
@@ -147,6 +104,7 @@ function renderReviewRail() {
     await persist();
     renderReviewRail();
     renderNav();
+    updateNextStepLink();
   });
 
   feedbackPanel.append(feedbackInput, saveFeedbackBtn);
@@ -201,6 +159,7 @@ function renderNav() {
     await persist();
     renderReviewRail();
     renderNav();
+    updateNextStepLink();
   });
 
   navEl.append(prevBtn, strip, nextBtn, approveAllBtn);
@@ -208,6 +167,18 @@ function renderNav() {
   const activeDot = strip.querySelector(".active");
   activeDot?.scrollIntoView({ block: "nearest", inline: "center" });
 }
+
+function updateNextStepLink() {
+  const allApproved = project.slides.every((s) => s.reviewStatus === "approved");
+  nextStepLink.href = `/prompts.html?project=${project.id}`;
+  nextStepLink.classList.toggle("btn-disabled", !allApproved);
+  nextStepLink.setAttribute("aria-disabled", String(!allApproved));
+  nextStepLink.title = allApproved ? "" : "Approuve toutes les slides avant de passer aux styles et prompts d'image.";
+}
+
+nextStepLink.addEventListener("click", (event) => {
+  if (nextStepLink.getAttribute("aria-disabled") === "true") event.preventDefault();
+});
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "ArrowLeft") goTo(currentIndex - 1);
@@ -243,6 +214,7 @@ async function main() {
   renderSlide();
   renderReviewRail();
   renderNav();
+  updateNextStepLink();
 }
 
 main();
