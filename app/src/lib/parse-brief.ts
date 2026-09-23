@@ -200,7 +200,7 @@ export function parseBrief(markdown: string): Project {
       onScreenText: { body: parseOnScreenText(onScreenBody) },
       layout,
       image: placeholderPrompt ? { placeholderPrompt } : undefined,
-      approved: false,
+      reviewStatus: "pending",
     } satisfies Slide;
   });
 

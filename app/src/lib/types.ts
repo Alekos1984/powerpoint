@@ -14,6 +14,8 @@ export interface SlideImage {
   generatedAssetId?: string;
 }
 
+export type ReviewStatus = "pending" | "approved" | "needs_changes";
+
 export interface Slide {
   id: string;
   order: number;
@@ -24,8 +26,10 @@ export interface Slide {
   };
   layout: LayoutId;
   image?: SlideImage;
-  /** Per-slide gate for step 2 (layout/text review). */
-  approved: boolean;
+  /** Per-slide gate for step 2 (text/layout review). */
+  reviewStatus: ReviewStatus;
+  /** What the user wants changed when reviewStatus is "needs_changes" — consumed by a future LLM rewrite pass. */
+  feedback?: string;
 }
 
 export interface TimingEntry {

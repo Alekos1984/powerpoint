@@ -4,18 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PPT Generator — Brouillon</title>
-    <link rel="stylesheet" href="../styles/main.css" />
+    <link rel="stylesheet" href="./styles/main.css" />
   </head>
   <body>
-    <main class="wizard">
-      <header class="wizard-header">
+    <header class="app-header">
+      <div>
         <h1 id="project-title">…</h1>
         <p id="project-meta" class="project-meta"></p>
-      </header>
+      </div>
+      <p id="slide-position" class="slide-position"></p>
+    </header>
 
-      <div id="slides" class="slides"></div>
-    </main>
+    <main id="slide-viewport" class="slide-viewport"></main>
 
-    <script type="module" src="../wizard/render.ts"></script>
+    <nav id="slide-nav" class="slide-nav" aria-label="Navigation entre les slides"></nav>
+
+    <script type="module" src="./scripts/render.ts"></script>
   </body>
 </html>
