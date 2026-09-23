@@ -21,7 +21,7 @@ function renderOnScreenLine(line: string): string {
 /** Shared slide preview used by both the text/layout review (wizard) and the prompt/style review steps. */
 export function buildSlideCard(
   slide: Slide,
-  opts?: { promptOverride?: string; promptTag?: string; generatedImageUrl?: string },
+  opts?: { promptOverride?: string; promptTag?: string; generatedImageUrl?: string; generationError?: string },
 ): HTMLElement {
   const preset = LAYOUT_PRESETS[slide.layout];
   const article = document.createElement("article");
@@ -40,6 +40,16 @@ export function buildSlideCard(
     placeholder.innerHTML = slide.image
       ? `<span class="placeholder-tag">${escapeHtml(opts?.promptTag ?? "image à générer (étape 3)")}</span><p class="placeholder-prompt">${escapeHtml(promptText ?? "")}</p>`
       : `<span class="placeholder-tag">texte seul</span>`;
+  }
+
+  if (opts?.generationError) {
+    // Shown directly on the slide, not just in the side rail — a failed regeneration
+    // otherwise leaves the previous (successful) image in place with nothing on the
+    // slide itself hinting that the *new* attempt actually failed.
+    const errorBanner = document.createElement("div");
+    errorBanner.className = "generation-error-banner";
+    errorBanner.innerHTML = `<strong>⚠ Échec de la dernière génération</strong><span>${escapeHtml(opts.generationError)}</span>`;
+    placeholder.appendChild(errorBanner);
   }
 
   const text = document.createElement("div");

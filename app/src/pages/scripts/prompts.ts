@@ -90,7 +90,12 @@ function renderSlide() {
   const slide = project.slides[currentIndex];
   viewportEl.innerHTML = "";
   viewportEl.appendChild(
-    buildSlideCard(slide, { promptOverride: currentPromptFor(slide), promptTag: "Prompt final", generatedImageUrl: assetUrl(slide) }),
+    buildSlideCard(slide, {
+      promptOverride: currentPromptFor(slide),
+      promptTag: "Prompt final",
+      generatedImageUrl: assetUrl(slide),
+      generationError: slide.image?.generationError,
+    }),
   );
   const historyStrip = buildHistoryStrip(slide);
   if (historyStrip) viewportEl.appendChild(historyStrip);
@@ -169,6 +174,14 @@ function renderGenerationStatus(slide: Slide) {
     err.className = "feedback-note";
     err.textContent = `Échec : ${slide.image.generationError}`;
     wrap.appendChild(err);
+
+    if (/organization|organisation|403/i.test(slide.image.generationError)) {
+      const hint = document.createElement("p");
+      hint.className = "feedback-note";
+      hint.textContent =
+        "→ gpt-image-1 exige une organisation OpenAI vérifiée. Vérifie-la sur platform.openai.com/settings/organization/general, attends quelques minutes, puis réessaie.";
+      wrap.appendChild(hint);
+    }
 
     const retryBtn = document.createElement("button");
     retryBtn.className = "btn btn-reject";

@@ -302,6 +302,7 @@ a.btn {
 }
 
 .image-placeholder {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -314,6 +315,7 @@ a.btn {
 }
 
 .image-generated {
+  position: relative;
   overflow: hidden;
 }
 
@@ -322,6 +324,28 @@ a.btn {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.generation-error-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  background: #8c1d18;
+  color: #fff;
+  padding: 0.6rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.generation-error-banner span {
+  font-size: 0.78rem;
+  opacity: 0.9;
+  word-break: break-word;
 }
 
 .placeholder-tag {
