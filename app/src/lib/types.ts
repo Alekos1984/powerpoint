@@ -62,6 +62,15 @@ export interface Project {
   slides: Slide[];
 }
 
+export interface ProjectSummary {
+  id: string;
+  title: string;
+  createdAt: string;
+  status: ProjectStatus;
+  slideCount: number;
+  approvedCount: number;
+}
+
 export interface ImageStylePreset {
   id: string;
   label: string;

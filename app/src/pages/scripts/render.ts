@@ -8,6 +8,7 @@ const titleEl = document.querySelector<HTMLHeadingElement>("#project-title")!;
 const metaEl = document.querySelector<HTMLParagraphElement>("#project-meta")!;
 const positionEl = document.querySelector<HTMLParagraphElement>("#slide-position")!;
 const viewportEl = document.querySelector<HTMLElement>("#slide-viewport")!;
+const railEl = document.querySelector<HTMLElement>("#review-rail")!;
 const navEl = document.querySelector<HTMLElement>("#slide-nav")!;
 
 let project: Project;
@@ -44,6 +45,7 @@ function goTo(index: number) {
   url.searchParams.set("slide", String(project.slides[currentIndex].order));
   window.history.replaceState({}, "", url);
   renderSlide();
+  renderReviewRail();
   renderNav();
 }
 
@@ -78,13 +80,29 @@ function renderSlide() {
   spoken.innerHTML = `<summary>Texte oral</summary><p>${escapeHtml(slide.spokenText)}</p>`;
   text.appendChild(spoken);
 
-  const review = document.createElement("div");
-  review.className = "review-panel";
+  if (preset.id === "image-half-right") {
+    article.append(text, placeholder);
+  } else {
+    article.append(placeholder, text);
+  }
+  viewportEl.appendChild(article);
+
+  positionEl.textContent = `Slide ${currentIndex + 1} / ${project.slides.length}`;
+}
+
+function renderReviewRail() {
+  const slide = project.slides[currentIndex];
+  railEl.innerHTML = "";
+
+  const heading = document.createElement("p");
+  heading.className = "review-rail-heading";
+  heading.textContent = `Slide ${slide.order} / ${project.slides.length}`;
+  railEl.appendChild(heading);
 
   const statusBadge = document.createElement("span");
   statusBadge.className = `status-badge status-${slide.reviewStatus}`;
   statusBadge.textContent = STATUS_LABEL[slide.reviewStatus];
-  review.appendChild(statusBadge);
+  railEl.appendChild(statusBadge);
 
   const actions = document.createElement("div");
   actions.className = "review-actions";
@@ -96,7 +114,7 @@ function renderSlide() {
     slide.reviewStatus = "approved";
     slide.feedback = undefined;
     await persist();
-    renderSlide();
+    renderReviewRail();
     renderNav();
   });
 
@@ -109,7 +127,7 @@ function renderSlide() {
   });
 
   actions.append(approveBtn, rejectBtn);
-  review.appendChild(actions);
+  railEl.appendChild(actions);
 
   const feedbackPanel = document.createElement("div");
   feedbackPanel.className = "feedback-panel";
@@ -127,30 +145,19 @@ function renderSlide() {
     slide.reviewStatus = "needs_changes";
     slide.feedback = feedbackInput.value.trim();
     await persist();
-    renderSlide();
+    renderReviewRail();
     renderNav();
   });
 
   feedbackPanel.append(feedbackInput, saveFeedbackBtn);
-  review.appendChild(feedbackPanel);
+  railEl.appendChild(feedbackPanel);
 
   if (slide.reviewStatus === "needs_changes" && slide.feedback) {
     const note = document.createElement("p");
     note.className = "feedback-note";
     note.textContent = `Remarque enregistrée : ${slide.feedback}`;
-    review.appendChild(note);
+    railEl.appendChild(note);
   }
-
-  text.appendChild(review);
-
-  if (preset.id === "image-half-right") {
-    article.append(text, placeholder);
-  } else {
-    article.append(placeholder, text);
-  }
-  viewportEl.appendChild(article);
-
-  positionEl.textContent = `Slide ${currentIndex + 1} / ${project.slides.length}`;
 }
 
 function renderNav() {
@@ -192,7 +199,7 @@ function renderNav() {
       s.feedback = undefined;
     }
     await persist();
-    renderSlide();
+    renderReviewRail();
     renderNav();
   });
 
@@ -210,7 +217,7 @@ document.addEventListener("keydown", (event) => {
 async function main() {
   if (!projectId) {
     titleEl.textContent = "Aucun projet";
-    metaEl.textContent = "Reviens à l'accueil pour importer un brief.";
+    metaEl.textContent = "Reviens à l'accueil pour importer ou reprendre un brief.";
     return;
   }
 
@@ -234,6 +241,7 @@ async function main() {
   currentIndex = requestedIndex >= 0 ? requestedIndex : 0;
 
   renderSlide();
+  renderReviewRail();
   renderNav();
 }
 
