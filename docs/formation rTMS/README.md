@@ -16,6 +16,8 @@ au fur et à mesure.
 | `Capsule_1_intro_html/index.html` | Deck HTML autonome, 44 diapos au format 1920×1080, en français, anglais, espagnol et italien (drapeaux en haut à droite). Ouvrir le fichier dans un navigateur ; navigation au clavier (flèches), au clic ou par balayage. |
 | `Capsule_1_intro_html/img/` | Toutes les images du PowerPoint, optimisées ; le texte figé des schémas a été retiré et remplacé par des légendes HTML traduites. |
 | `Capsule_1_intro_script_oral.txt` | Texte de l'orateur, un paragraphe par diapo, dans l'ordre du deck HTML, prêt à coller dans un avatar (HeyGen / HyperFrames). |
+| `Capsule_1_intro_script_oral_es.txt` | Même texte en espagnol, paragraphe par paragraphe. |
+| `Capsule_1_video_heygen_fr.pptx`, `Capsule_1_video_heygen_es.pptx` | Les 44 diapos en images 1920×1080 (sans drapeaux ni navigation), avec le texte oral de la langue dans les notes : à importer dans HeyGen, une scène par diapo. |
 
 Correspondance avec le PowerPoint : la diapo « Neurostimulation » d'origine est
 éclatée en quatre diapos HTML (vue d'ensemble, invasives, convulsives, non
